@@ -1,4 +1,5 @@
 bin
 gbadev
 gbadev.*
+!gbadev.nimble
 nimcache
