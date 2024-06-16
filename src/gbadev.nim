@@ -1,11 +1,86 @@
-import natu/[video, tte]
-import init
-# show background 0
-dispcnt = initDispCnt(bg0 = true)
+import natu/[video, bios, irq, input, math, utils]
+import natu/[graphics, backgrounds]
 
-# initialise text
-initTte()
-tte.write("Hello World!")
+const anims: array[Graphic, AnimData] = [
+  gfxTestCharacter: AnimData(first: 0, len: 1, speed: 3),
+]
 
-while true:
-  discard
+var graphic: Graphic     # Current image to show
+var anim: Anim           # Animation state
+var obj: ObjAttr         # Sprite fields
+
+proc initCurrentSprite(g: Graphic) =
+  graphic = g
+  anim = initAnim(anims[g])
+  obj.init(
+    pos = vec2i(120, 80) - vec2i(g.width, g.height) / 2,
+    size = g.size,
+    tid = allocObjTiles(g),  # Reserve enough tiles in VRAM for 1 frame of animation.
+    pal = acquireObjPal(g),  # Load the palette into a slot in the PAL RAM buffer
+  )
+
+proc destroyCurrentSprite() =
+  freeObjTiles(obj.tid)    # Free the tiles.
+  releaseObjPal(graphic)   # Palette will also be freed only if nobody else is using it.
+
+
+proc update =
+  ## Run game logic
+  
+  initCurrentSprite(anim[0])
+  
+  anim.update()
+
+
+proc draw =
+  ## Do graphical updates
+  
+  # update OAM entry
+  # note: unlike in C, we can do this assignment without clobbering the affine data.
+  objMem[0] = obj
+  
+  if anim.dirty:
+    # copy a new frame into VRAM only if we're on a different
+    # frame of animation than previously.
+    copyFrame(addr objTileMem[obj.tid], graphic, anim.frame)
+  
+  # Copy palette buffers into PAL RAM.
+  flushPals()
+
+
+proc onVBlank =
+  audio.vblank()
+  draw()
+  audio.frame()
+
+
+proc main =
+  
+  # setup
+  
+  irq.put(iiVBlank, onVBlank)
+  
+  audio.init()
+  
+  dispcnt.init(layers = { lBg0, lObj }, obj1d = true)
+  
+  # Init BG0
+  bgcnt[0].init(cbb = 0, sbb = 31)
+  
+  # Copy the tiles, map and palette
+  bgcnt[0].load(bgDarkClouds)
+  
+  # Hide all sprites
+  for obj in mitems(objMem):
+    obj.hide()
+  
+  playSong(modSubway)
+  initCurrentSprite(gfxPlayer)
+  
+  while true:
+    keyPoll()
+    update()
+    VBlankIntrWait()
+
+
+main()
