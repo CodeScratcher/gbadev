@@ -19,7 +19,7 @@ if projectPath() == thisDir() / main:
   switch "cincludes", nimcacheDir()    # allow external C files to include "{project}.h"
 
 task graphics, "convert spritesheets":
-  gfxConvert "graphics.nims"
+  gfxConvert "../graphics.nims"
 
 task build, "builds the GBA rom":
   let args = commandLineParams()[1..^1].join(" ")

@@ -1,4 +1,5 @@
 import std/[strutils]
+import natu/config
 
 task build, "build src":
   for dir in listDirs(thisDir()):
@@ -6,3 +7,6 @@ task build, "build src":
       withDir dir:
         echo dir
         selfExec "build"
+
+task graphics, "convert spritesheets":
+  gfxConvert "graphics.nims"

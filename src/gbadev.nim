@@ -1,5 +1,6 @@
-import natu/[video, bios, irq, input, math, utils]
-import natu/[graphics, backgrounds]
+import natu/[video, bios, irq, input, math, utils, memory, oam]
+import natu/[graphics]
+import animUtils
 
 const anims: array[Graphic, AnimData] = [
   gfxTestCharacter: AnimData(first: 0, len: 1, speed: 3),
@@ -23,12 +24,21 @@ proc destroyCurrentSprite() =
   freeObjTiles(obj.tid)    # Free the tiles.
   releaseObjPal(graphic)   # Palette will also be freed only if nobody else is using it.
 
+var x = 0
+var y = 0
 
 proc update =
-  ## Run game logic
+  if keyIsDown(kiLeft):
+    x -= 5
+  if keyIsDown(kiRight):
+    x += 5
+  if keyIsDown(kiUp):
+    y -= 5
+  if keyIsDown(kiDown):
+    y += 5
   
-  initCurrentSprite(anim[0])
-  
+  obj.pos = vec2i(x, y)
+  ## Run game logic  
   anim.update()
 
 
@@ -49,9 +59,7 @@ proc draw =
 
 
 proc onVBlank =
-  audio.vblank()
   draw()
-  audio.frame()
 
 
 proc main =
@@ -59,23 +67,20 @@ proc main =
   # setup
   
   irq.put(iiVBlank, onVBlank)
+  releaseObjPal(graphic)   # Palette will also be freed only if nobody else is using it.
+
   
-  audio.init()
   
   dispcnt.init(layers = { lBg0, lObj }, obj1d = true)
   
   # Init BG0
   bgcnt[0].init(cbb = 0, sbb = 31)
-  
-  # Copy the tiles, map and palette
-  bgcnt[0].load(bgDarkClouds)
-  
+    
   # Hide all sprites
   for obj in mitems(objMem):
     obj.hide()
   
-  playSong(modSubway)
-  initCurrentSprite(gfxPlayer)
+  initCurrentSprite(gfxTestCharacter)
   
   while true:
     keyPoll()

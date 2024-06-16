@@ -12,3 +12,6 @@ binDir        = "bin"
 
 requires "nim >= 2.0.4"
 requires "natu >= 0.2.0"
+
+task graphics, "convert spritesheets":
+  exec "nim graphics"
